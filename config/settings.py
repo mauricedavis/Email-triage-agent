@@ -26,9 +26,10 @@ def load_settings() -> dict:
         "MS_TOKEN_CACHE":     os.getenv("MS_TOKEN_CACHE", ".ms_token_cache.json"),
 
         # Evernote
-        "EVERNOTE_TOKEN":     os.getenv("EVERNOTE_TOKEN", ""),
-        "EVERNOTE_NOTEBOOK":  os.getenv("EVERNOTE_NOTEBOOK", ""),
-        "EVERNOTE_SANDBOX":   os.getenv("EVERNOTE_SANDBOX", "false").lower() == "true",
+        "EVERNOTE_TOKEN":            os.getenv("EVERNOTE_TOKEN", ""),
+        "EVERNOTE_NOTEBOOK":         os.getenv("EVERNOTE_NOTEBOOK", ""),
+        "EVERNOTE_JOURNAL_NOTEBOOK": os.getenv("EVERNOTE_JOURNAL_NOTEBOOK", "Daily Journal"),
+        "EVERNOTE_SANDBOX":          os.getenv("EVERNOTE_SANDBOX", "false").lower() == "true",
 
         # Jira
         "JIRA_BASE_URL":               os.getenv("JIRA_BASE_URL", ""),

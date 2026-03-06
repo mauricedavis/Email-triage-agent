@@ -5,7 +5,7 @@ Morning Briefing Agent
 Pulls from Outlook (Microsoft Graph API) + Evernote API,
 classifies everything with Claude, auto-creates or proposes
 Jira tickets for bugs/errors, and outputs a structured daily
-briefing to console, HTML file, and optionally Slack.
+briefing to console, HTML file, Evernote (Daily Journal), and Slack.
 
 Usage:
     python agent.py                  # Run briefing now
@@ -28,10 +28,11 @@ from config.settings import load_settings
 
 def main():
     parser = argparse.ArgumentParser(description="Morning Briefing Agent")
-    parser.add_argument("--slack",    action="store_true", help="Post briefing to Slack")
-    parser.add_argument("--days",     type=int, default=1, help="Days of email to look back (default: 1)")
-    parser.add_argument("--dry-run",  action="store_true", help="Use mock data, skip live API calls")
-    parser.add_argument("--no-jira",  action="store_true", help="Skip Jira ticket creation entirely")
+    parser.add_argument("--slack",      action="store_true", help="Post briefing to Slack")
+    parser.add_argument("--days",       type=int, default=1, help="Days of email to look back (default: 1)")
+    parser.add_argument("--dry-run",    action="store_true", help="Use mock data, skip live API calls")
+    parser.add_argument("--no-jira",    action="store_true", help="Skip Jira ticket creation entirely")
+    parser.add_argument("--no-evernote-out", action="store_true", help="Skip writing briefing note to Evernote")
     parser.add_argument("--output-dir", default="output", help="Directory for HTML output")
     args = parser.parse_args()
 
@@ -81,7 +82,7 @@ def main():
     else:
         briefing["jira_results"] = []
 
-    # ── 5. OUTPUT ─────────────────────────────────────────────────
+    # ── 5. CONSOLE + HTML OUTPUT ──────────────────────────────────
     text_output = format_briefing_text(briefing)
     print(text_output)
 
@@ -94,6 +95,20 @@ def main():
         f.write(html_output)
     print(f"\n✅ HTML briefing saved: {html_path}")
 
+    # ── 6. EVERNOTE NOTE OUTPUT ───────────────────────────────────
+    journal_notebook = settings.get("EVERNOTE_JOURNAL_NOTEBOOK", "Daily Journal")
+    if not args.no_evernote_out and not args.dry_run and settings.get("EVERNOTE_TOKEN"):
+        print(f"\n📓 Creating Evernote note in '{journal_notebook}'...")
+        evernote_out = EvernoteClient(settings)
+        guid = evernote_out.create_morning_note(briefing, output_notebook=journal_notebook)
+        if guid:
+            print(f"   → Note created successfully")
+        else:
+            print(f"   → Note creation failed (check notebook name in .env)")
+    elif args.dry_run:
+        print(f"\n📓 Evernote note: skipped in --dry-run mode")
+
+    # ── 7. SLACK OUTPUT ───────────────────────────────────────────
     if args.slack:
         if not settings.get("SLACK_BOT_TOKEN") or not settings.get("SLACK_CHANNEL_ID"):
             print("⚠️  Slack not configured — skipping")
